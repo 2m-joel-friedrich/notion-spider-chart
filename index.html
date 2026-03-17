@@ -30,41 +30,112 @@
     <h1>Mitarbeiterprofil: Max Mustermann</h1>
     <canvas id="radarChart"></canvas>
     <script>
+        // Farbpalette für mehrere Datensätze
+        const COLORS = [
+            { bg: 'rgba(54, 162, 235, 0.2)',  border: 'rgba(54, 162, 235, 1)'  },
+            { bg: 'rgba(255, 99,  132, 0.2)',  border: 'rgba(255, 99,  132, 1)' },
+            { bg: 'rgba(75,  192, 192, 0.2)',  border: 'rgba(75,  192, 192, 1)' },
+            { bg: 'rgba(255, 159,  64, 0.2)',  border: 'rgba(255, 159,  64, 1)' },
+        ];
+
         // Default-Profil für Fallback
         const defaultProfile = {
             name: 'Max Mustermann',
             dimensions: ['Kommunikation', 'Teamarbeit', 'Fachwissen', 'Eigenverantwortung', 'Problemlösung', 'Führung'],
-            values: [4, 5, 3, 4, 4, 2]
+            datasets: [{ label: 'Bewertung', values: [4, 5, 3, 4, 4, 2] }]
         };
 
         // Funktion zum Parsen von URL-Parametern
+        // values unterstützt mehrere Datensätze via | als Trennzeichen: values=5,2,3|4,1,2
+        // labels benennt die Datensätze (kommagetrennt): labels=Person1,Person2
         function parseURLParams() {
             const urlParams = new URLSearchParams(window.location.search);
+            const rawValues = urlParams.get('values');
+            const rawLabels = urlParams.get('labels');
+
+            let valueSets = null;
+            if (rawValues) {
+                valueSets = rawValues.split('|').map(set => set.split(',').map(v => parseFloat(v)));
+            }
+
             return {
                 name: urlParams.get('name'),
                 dimensions: urlParams.get('dimensions') ? urlParams.get('dimensions').split(',') : null,
-                values: urlParams.get('values') ? urlParams.get('values').split(',').map(v => parseFloat(v)) : null
+                valueSets,
+                labels: rawLabels ? rawLabels.split(',') : null
             };
+        }
+
+        // Funktion zur Formatierung von Labels (intelligente Zeilenumbrüche)
+        // Chart.js erwartet für mehrzeilige Labels ein Array von Strings
+        function formatLabel(label) {
+            const MAX_LINE = 15;
+            if (label.length <= MAX_LINE) return label;
+
+            // Greedy word-wrap into array of lines
+            const words = label.split(' ');
+            const lines = [];
+            let current = '';
+            for (const word of words) {
+                if (!current) {
+                    current = word;
+                } else if ((current + ' ' + word).length <= MAX_LINE) {
+                    current += ' ' + word;
+                } else {
+                    lines.push(current);
+                    current = word;
+                }
+            }
+            lines.push(current);
+
+            // Break any still-too-long lines at a hyphen near the midpoint
+            const result = [];
+            for (const line of lines) {
+                if (line.length <= MAX_LINE) {
+                    result.push(line);
+                } else {
+                    const mid = Math.floor(line.length / 2);
+                    const hyphenIdx = line.lastIndexOf('-', mid + 3);
+                    if (hyphenIdx > 0) {
+                        result.push(line.slice(0, hyphenIdx + 1));
+                        result.push(line.slice(hyphenIdx + 1));
+                    } else {
+                        result.push(line);
+                    }
+                }
+            }
+
+            return result;
         }
 
         // Funktion zur Normalisierung und Validierung des Profils
         function normalizeProfile(params) {
-            let profile = { ...defaultProfile };
+            let profile = {
+                name: defaultProfile.name,
+                dimensions: defaultProfile.dimensions,
+                datasets: defaultProfile.datasets
+            };
 
             if (params.name) {
                 profile.name = params.name;
             }
 
-            if (params.dimensions && params.values) {
-                // Prüfe, ob Anzahl übereinstimmt und Werte numerisch sind
-                if (params.dimensions.length === params.values.length &&
-                    params.values.every(v => !isNaN(v) && v >= 0 && v <= 5)) {
-                    profile.dimensions = params.dimensions;
-                    profile.values = params.values;
+            if (params.dimensions && params.valueSets) {
+                const dimCount = params.dimensions.length;
+                const allValid = params.valueSets.every(set =>
+                    set.length === dimCount && set.every(v => !isNaN(v) && v >= 0 && v <= 5)
+                );
+
+                if (allValid) {
+                    profile.dimensions = params.dimensions.map(formatLabel);
+                    profile.datasets = params.valueSets.map((values, i) => ({
+                        label: params.labels?.[i] ?? `Datensatz ${i + 1}`,
+                        values
+                    }));
                 } else {
-                    console.warn('Ungültige URL-Parameter: Dimensions und Values müssen übereinstimmen und Werte zwischen 0-5 sein. Verwende Defaults.');
+                    console.warn('Ungültige URL-Parameter: Alle Value-Sets müssen zur Anzahl der Dimensions passen und Werte zwischen 0-5 sein. Verwende Defaults.');
                 }
-            } else if (params.dimensions || params.values) {
+            } else if (params.dimensions || params.valueSets) {
                 console.warn('Unvollständige URL-Parameter: Beide dimensions und values müssen gesetzt sein. Verwende Defaults.');
             }
 
@@ -78,36 +149,41 @@
         }
 
         // Funktion zur Initialisierung des Charts
-        function initChart(dimensions, values) {
+        function initChart(dimensions, datasets) {
             const ctx = document.getElementById('radarChart').getContext('2d');
             new Chart(ctx, {
                 type: 'radar',
                 data: {
                     labels: dimensions,
-                    datasets: [{
-                        label: 'Bewertung',
-                        data: values,
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 2,
-                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
-                    }]
+                    datasets: datasets.map((ds, i) => {
+                        const color = COLORS[i % COLORS.length];
+                        return {
+                            label: ds.label,
+                            data: ds.values,
+                            backgroundColor: color.bg,
+                            borderColor: color.border,
+                            borderWidth: 2,
+                            pointBackgroundColor: color.border,
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: color.border
+                        };
+                    })
                 },
                 options: {
-                    responsive: true
+                    responsive: true,
+                    plugins: {
+                        legend: { display: datasets.length > 1 }
+                    }
                 }
             });
         }
 
-        // Hauptlogik: Hier könnten später Daten aus Notion API, JSON oder anderer Quelle geladen werden
-        // Aktuell: Parse URL-Parameter und initialisiere
+        // Hauptlogik
         const params = parseURLParams();
         const profile = normalizeProfile(params);
         setTitle(profile.name);
-        initChart(profile.dimensions, profile.values);
+        initChart(profile.dimensions, profile.datasets);
     </script>
 </body>
 </html>

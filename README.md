@@ -4,7 +4,10 @@ Ein einfacher statischer Proof-of-Concept für ein Mitarbeiterprofil mit Radar-C
 
 ## Überblick
 
-Diese Seite zeigt ein Radar-Chart mit Bewertungen für verschiedene Kompetenzen eines Mitarbeiters. Die Daten können optional über URL-Parameter übergeben werden, um individuelle Profile zu generieren.
+Diese Seite zeigt ein Radar-Chart mit Bewertungen für verschiedene Kompetenzen eines Mitarbeiters. Die Daten werden über URL-Parameter übergeben. Es gibt zwei Modi:
+
+- **Einzelprofil** – zeigt die Ausprägungen einer Person
+- **Vergleichsmodus** – überlagert mehrere Profile im selben Chart, z. B. um eine Person mit einem Archetypen zu vergleichen und Entwicklungspotenziale sichtbar zu machen
 
 ## Technologie
 
@@ -18,18 +21,38 @@ Diese Seite zeigt ein Radar-Chart mit Bewertungen für verschiedene Kompetenzen 
 
 ### URL-Parameter
 
-Die Seite unterstützt URL-Parameter für dynamische Profile:
+| Parameter    | Beschreibung |
+|--------------|--------------|
+| `name`       | Seitentitel / Name des Mitarbeiters |
+| `dimensions` | Komma-separierte Achsenbeschriftungen |
+| `values`     | Werte (0–5) pro Datensatz, komma-separiert. Mehrere Datensätze werden mit `\|` getrennt. |
+| `labels`     | *(optional)* Komma-separierte Namen der Datensätze – wird in der Legende angezeigt, wenn mehr als ein Datensatz vorhanden ist |
 
-- `name`: Name des Mitarbeiters (z. B. `Max%20Mustermann`)
-- `dimensions`: Komma-separierte Liste der Dimensionen (z. B. `Kommunikation,Teamarbeit,Fachwissen`)
-- `values`: Komma-separierte Liste der Werte (0-5, z. B. `4,5,3,4,4,2`)
+### Modus 1: Einzelprofil
 
-Beispiel-URLs:
-- `index.html?name=Max%20Mustermann&dimensions=Kommunikation,Teamarbeit,Fachwissen,Eigenverantwortung,Problemlösung,Führung&values=4,5,3,4,4,2`
-- `index.html?name=Anna%20Schmidt&dimensions=Kreativität,Analytik,Leadership&values=5,4,3`
+Für eine Person ohne `labels`-Parameter. Die Legende wird automatisch ausgeblendet.
+
+```
+index.html
+  ?name=Anna%20Schmidt
+  &dimensions=Kommunikation,Teamarbeit,Fachwissen,Eigenverantwortung,Problemlösung
+  &values=4,5,3,4,2
+```
+
+### Modus 2: Profilvergleich
+
+Mehrere Datensätze werden mit `|` in `values` getrennt und über `labels` benannt. Die Legende wird automatisch eingeblendet.
+
+Ein typischer Anwendungsfall ist der Vergleich einer Person mit einem Ziel-Archetypen (z. B. „Senior Analyst"), um auf einen Blick zu sehen, in welchen Bereichen noch Entwicklungspotenzial besteht.
+
+```
+index.html
+  ?name=Vergleich%20Anna%20vs.%20Senior%20Analyst
+  &dimensions=Kommunikation,Teamarbeit,Fachwissen,Eigenverantwortung,Problemlösung
+  &values=4,5,3,4,2|5,4,5,5,5
+  &labels=Anna%20Schmidt,Senior%20Analyst
+```
+
+Jeder Datensatz erhält automatisch eine eigene Farbe. Es werden bis zu 4 Datensätze unterstützt.
 
 Wenn Parameter fehlen oder ungültig sind, wird ein Default-Profil verwendet.
-
-## Notion-Anbindung
-
-Der Code ist vorbereitet für eine spätere Integration mit Notion (z. B. via API oder JSON). Die Datenstruktur ist klar getrennt, und Kommentare zeigen, wo externe Daten eingespeist werden können.
