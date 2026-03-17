@@ -1,0 +1,31 @@
+[project]
+dependencies = [
+  "loguru",
+]
+description = "Repository Template for twomynds"
+name = "002m-intern-25-12-template"
+readme = "README.md"
+requires-python = ">=3.11"
+version = "0.1.0"
+
+[dependency-groups]
+dev = [
+  "pre-commit",
+]
+
+[tool.ruff]
+exclude = [
+  ".git",
+  ".venv",
+  "venv",
+  "__pycache__",
+  "*.egg-info",
+]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "auto"
+quote-style = "double"
+skip-magic-trailing-comma = false
