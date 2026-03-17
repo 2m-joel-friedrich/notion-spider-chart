@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mitarbeiterprofil: Max Mustermann</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #555;
+        }
+        canvas {
+            max-width: 600px;
+            height: 400px;
+            margin: 0 auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mitarbeiterprofil: Max Mustermann</h1>
+    <canvas id="radarChart"></canvas>
+    <script>
+        // Default-Profil für Fallback
+        const defaultProfile = {
+            name: 'Max Mustermann',
+            dimensions: ['Kommunikation', 'Teamarbeit', 'Fachwissen', 'Eigenverantwortung', 'Problemlösung', 'Führung'],
+            values: [4, 5, 3, 4, 4, 2]
+        };
+
+        // Funktion zum Parsen von URL-Parametern
+        function parseURLParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                name: urlParams.get('name'),
+                dimensions: urlParams.get('dimensions') ? urlParams.get('dimensions').split(',') : null,
+                values: urlParams.get('values') ? urlParams.get('values').split(',').map(v => parseFloat(v)) : null
+            };
+        }
+
+        // Funktion zur Normalisierung und Validierung des Profils
+        function normalizeProfile(params) {
+            let profile = { ...defaultProfile };
+
+            if (params.name) {
+                profile.name = params.name;
+            }
+
+            if (params.dimensions && params.values) {
+                // Prüfe, ob Anzahl übereinstimmt und Werte numerisch sind
+                if (params.dimensions.length === params.values.length &&
+                    params.values.every(v => !isNaN(v) && v >= 0 && v <= 5)) {
+                    profile.dimensions = params.dimensions;
+                    profile.values = params.values;
+                } else {
+                    console.warn('Ungültige URL-Parameter: Dimensions und Values müssen übereinstimmen und Werte zwischen 0-5 sein. Verwende Defaults.');
+                }
+            } else if (params.dimensions || params.values) {
+                console.warn('Unvollständige URL-Parameter: Beide dimensions und values müssen gesetzt sein. Verwende Defaults.');
+            }
+
+            return profile;
+        }
+
+        // Funktion zum Setzen des Titels
+        function setTitle(name) {
+            document.querySelector('h1').textContent = `Mitarbeiterprofil: ${name}`;
+            document.title = `Mitarbeiterprofil: ${name}`;
+        }
+
+        // Funktion zur Initialisierung des Charts
+        function initChart(dimensions, values) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: dimensions,
+                    datasets: [{
+                        label: 'Bewertung',
+                        data: values,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        // Hauptlogik: Hier könnten später Daten aus Notion API, JSON oder anderer Quelle geladen werden
+        // Aktuell: Parse URL-Parameter und initialisiere
+        const params = parseURLParams();
+        const profile = normalizeProfile(params);
+        setTitle(profile.name);
+        initChart(profile.dimensions, profile.values);
+    </script>
+</body>
+</html>

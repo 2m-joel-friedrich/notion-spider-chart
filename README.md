@@ -1,27 +1,35 @@
-# twomynds Python Template
+# Mitarbeiterprofil POC
 
-The standard template repo for Python projects at twomynds.
+Ein einfacher statischer Proof-of-Concept für ein Mitarbeiterprofil mit Radar-Chart, geeignet für GitHub Pages und Notion-Embedding.
 
-Use this to start new services and libraries with the same structure, tooling,
-and conventions. Keep it simple, consistent, and easy to onboard.
+## Überblick
 
-## Quick start
+Diese Seite zeigt ein Radar-Chart mit Bewertungen für verschiedene Kompetenzen eines Mitarbeiters. Die Daten können optional über URL-Parameter übergeben werden, um individuelle Profile zu generieren.
 
-1) Create a new repo from this template.
-2) Rename the package folder under `src/` and update `name` in `pyproject.toml`.
-3) Update `README.md` to describe the new project.
-4) If you need env vars, add them to `.env.example`.
-5) Commit and push.
+## Technologie
 
-## What's in the template (and why)
+- Reines HTML/CSS/JavaScript
+- Chart.js per CDN
+- Kein Build-Prozess erforderlich
 
-- `.ai/AGENTS.md`: instructions for AI agents collaborating on the project; extend this file with project-specific guidance.
-- `.github/ISSUE_TEMPLATE/`: structured issue forms for features, bugs, and tasks so reports are consistent and actionable.
-- `.github/workflows/pre-commit.yml`: lightweight CI that runs the same pre-commit checks on every push/PR.
-- `.vscode/settings.json`: editor defaults so VS Code users automatically format on save.
-- `src/`: dedicated source layout to avoid import path ambiguity and keep project structure clean.
-- `tests/`: a clear split between unit and integration tests to keep test intent obvious.
-- `.env.example`: placeholder for environment variables; kept empty because this template needs none by default.
-- `.pre-commit-config.yaml`: defines the exact hooks that run before commits, so everyone formats code the same way.
-- `.python-version`: pins the Python version for tools like pyenv and asdf to keep local dev consistent with CI.
-- `pyproject.toml`: single source of truth for project metadata, Python version, and formatting rules. Keeps tool config centralized.
+## Verwendung
+
+Öffne `index.html` in einem Browser oder deploye auf GitHub Pages.
+
+### URL-Parameter
+
+Die Seite unterstützt URL-Parameter für dynamische Profile:
+
+- `name`: Name des Mitarbeiters (z. B. `Max%20Mustermann`)
+- `dimensions`: Komma-separierte Liste der Dimensionen (z. B. `Kommunikation,Teamarbeit,Fachwissen`)
+- `values`: Komma-separierte Liste der Werte (0-5, z. B. `4,5,3,4,4,2`)
+
+Beispiel-URLs:
+- `index.html?name=Max%20Mustermann&dimensions=Kommunikation,Teamarbeit,Fachwissen,Eigenverantwortung,Problemlösung,Führung&values=4,5,3,4,4,2`
+- `index.html?name=Anna%20Schmidt&dimensions=Kreativität,Analytik,Leadership&values=5,4,3`
+
+Wenn Parameter fehlen oder ungültig sind, wird ein Default-Profil verwendet.
+
+## Notion-Anbindung
+
+Der Code ist vorbereitet für eine spätere Integration mit Notion (z. B. via API oder JSON). Die Datenstruktur ist klar getrennt, und Kommentare zeigen, wo externe Daten eingespeist werden können.
