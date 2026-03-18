@@ -13,15 +13,13 @@
         }
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
             text-align: center;
             display: flex;
             flex-direction: column;
+            transition: background-color 0.2s, color 0.2s;
         }
         h1 {
             margin: 8px 0;
-            color: #555;
             white-space: pre-line;
             flex-shrink: 0;
         }
@@ -38,22 +36,57 @@
         <canvas id="radarChart"></canvas>
     </div>
     <script>
-        // Farbpalette für mehrere Datensätze
-        const COLORS = [
-            { bg: 'rgba(54, 162, 235, 0.2)',  border: 'rgba(54, 162, 235, 1)'  },
-            { bg: 'rgba(255, 99,  132, 0.2)',  border: 'rgba(255, 99,  132, 1)' },
-            { bg: 'rgba(75,  192, 192, 0.2)',  border: 'rgba(75,  192, 192, 1)' },
-            { bg: 'rgba(255, 159,  64, 0.2)',  border: 'rgba(255, 159,  64, 1)' },
-        ];
+        // ---------------------------------------------------------------------------
+        // Theme
+        // ---------------------------------------------------------------------------
 
-        // Default-Profil für Fallback
+        function isDarkMode() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        function getTheme() {
+            const dark = isDarkMode();
+            return {
+                bg:          dark ? '#1a1a1a' : '#f4f4f4',
+                text:        dark ? '#e0e0e0' : '#333333',
+                subtext:     dark ? '#aaaaaa' : '#555555',
+                gridColor:   dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
+                angleColor:  dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
+                tickBg:      dark ? '#1a1a1a' : '#f4f4f4',
+                colors: dark ? [
+                    { bg: 'rgba(100, 180, 255, 0.25)', border: 'rgba(100, 180, 255, 1)'  },
+                    { bg: 'rgba(255, 130, 160, 0.25)', border: 'rgba(255, 130, 160, 1)'  },
+                    { bg: 'rgba(80,  210, 200, 0.25)', border: 'rgba(80,  210, 200, 1)'  },
+                    { bg: 'rgba(255, 190,  90, 0.25)', border: 'rgba(255, 190,  90, 1)'  },
+                ] : [
+                    { bg: 'rgba(54,  162, 235, 0.2)',  border: 'rgba(54,  162, 235, 1)'  },
+                    { bg: 'rgba(255,  99, 132, 0.2)',  border: 'rgba(255,  99, 132, 1)'  },
+                    { bg: 'rgba(75,  192, 192, 0.2)',  border: 'rgba(75,  192, 192, 1)'  },
+                    { bg: 'rgba(255, 159,  64, 0.2)',  border: 'rgba(255, 159,  64, 1)'  },
+                ]
+            };
+        }
+
+        function applyTheme(theme) {
+            document.body.style.backgroundColor = theme.bg;
+            document.body.style.color = theme.text;
+            document.querySelector('h1').style.color = theme.subtext;
+        }
+
+        // ---------------------------------------------------------------------------
+        // Farbpalette & Profil
+        // ---------------------------------------------------------------------------
+
         const defaultProfile = {
             name: 'Mitarbeiterprofil: Max Mustermann',
             dimensions: ['Kommunikation', 'Teamarbeit', 'Fachwissen', 'Eigenverantwortung', 'Problemlösung', 'Führung'],
             datasets: [{ label: 'Bewertung', values: [4, 5, 3, 4, 4, 2] }]
         };
 
-        // Funktion zum Parsen von URL-Parametern
+        // ---------------------------------------------------------------------------
+        // URL-Parameter
+        // ---------------------------------------------------------------------------
+
         // values unterstützt mehrere Datensätze via | als Trennzeichen: values=5,2,3|4,1,2
         // labels benennt die Datensätze (kommagetrennt): labels=Person1,Person2
         function parseURLParams() {
@@ -67,20 +100,22 @@
             }
 
             return {
-                name: urlParams.get('name'),
+                name:       urlParams.get('name'),
                 dimensions: urlParams.get('dimensions') ? urlParams.get('dimensions').split(',') : null,
                 valueSets,
-                labels: rawLabels ? rawLabels.split(',') : null
+                labels:     rawLabels ? rawLabels.split(',') : null
             };
         }
 
-        // Funktion zur Formatierung von Labels (intelligente Zeilenumbrüche)
+        // ---------------------------------------------------------------------------
+        // Label-Formatierung
+        // ---------------------------------------------------------------------------
+
         // Chart.js erwartet für mehrzeilige Labels ein Array von Strings
         function formatLabel(label) {
             const MAX_LINE = 15;
             if (label.length <= MAX_LINE) return label;
 
-            // Greedy word-wrap into array of lines
             const words = label.split(' ');
             const lines = [];
             let current = '';
@@ -96,7 +131,6 @@
             }
             lines.push(current);
 
-            // Break any still-too-long lines at a hyphen near the midpoint
             const result = [];
             for (const line of lines) {
                 if (line.length <= MAX_LINE) {
@@ -112,16 +146,18 @@
                     }
                 }
             }
-
             return result;
         }
 
-        // Funktion zur Normalisierung und Validierung des Profils
+        // ---------------------------------------------------------------------------
+        // Profil-Normalisierung
+        // ---------------------------------------------------------------------------
+
         function normalizeProfile(params) {
             let profile = {
-                name: defaultProfile.name,
+                name:       defaultProfile.name,
                 dimensions: defaultProfile.dimensions,
-                datasets: defaultProfile.datasets
+                datasets:   defaultProfile.datasets
             };
 
             if (params.name) {
@@ -150,31 +186,38 @@
             return profile;
         }
 
-        // Funktion zum Setzen des Titels
+        // ---------------------------------------------------------------------------
+        // Titel
+        // ---------------------------------------------------------------------------
+
         function setTitle(name) {
             document.querySelector('h1').textContent = name.replace(': ', ':\n');
             document.title = name;
         }
 
-        // Funktion zur Initialisierung des Charts
-        function initChart(dimensions, datasets) {
-            const ctx = document.getElementById('radarChart').getContext('2d');
-            new Chart(ctx, {
+        // ---------------------------------------------------------------------------
+        // Chart
+        // ---------------------------------------------------------------------------
+
+        let chartInstance = null;
+
+        function buildChartConfig(dimensions, datasets, theme) {
+            return {
                 type: 'radar',
                 data: {
                     labels: dimensions,
                     datasets: datasets.map((ds, i) => {
-                        const color = COLORS[i % COLORS.length];
+                        const color = theme.colors[i % theme.colors.length];
                         return {
-                            label: ds.label,
-                            data: ds.values,
-                            backgroundColor: color.bg,
-                            borderColor: color.border,
-                            borderWidth: 2,
-                            pointBackgroundColor: color.border,
-                            pointBorderColor: '#fff',
-                            pointHoverBackgroundColor: '#fff',
-                            pointHoverBorderColor: color.border
+                            label:                    ds.label,
+                            data:                     ds.values,
+                            backgroundColor:          color.bg,
+                            borderColor:              color.border,
+                            borderWidth:              2,
+                            pointBackgroundColor:     color.border,
+                            pointBorderColor:         theme.bg,
+                            pointHoverBackgroundColor: theme.bg,
+                            pointHoverBorderColor:    color.border
                         };
                     })
                 },
@@ -182,24 +225,54 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: datasets.length > 1 }
+                        legend: {
+                            display: datasets.length > 1,
+                            labels: { color: theme.text }
+                        }
                     },
                     scales: {
                         r: {
                             min: 0,
                             max: 5,
-                            ticks: { stepSize: 1 }
+                            ticks: {
+                                stepSize: 1,
+                                color:    theme.subtext,
+                                backdropColor: theme.tickBg
+                            },
+                            grid:         { color: theme.gridColor },
+                            angleLines:   { color: theme.angleColor },
+                            pointLabels:  { color: theme.text }
                         }
                     }
                 }
-            });
+            };
         }
 
+        function renderChart(dimensions, datasets) {
+            const theme = getTheme();
+            applyTheme(theme);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            chartInstance = new Chart(ctx, buildChartConfig(dimensions, datasets, theme));
+        }
+
+        // ---------------------------------------------------------------------------
         // Hauptlogik
-        const params = parseURLParams();
+        // ---------------------------------------------------------------------------
+
+        const params  = parseURLParams();
         const profile = normalizeProfile(params);
         setTitle(profile.name);
-        initChart(profile.dimensions, profile.datasets);
+        renderChart(profile.dimensions, profile.datasets);
+
+        // Theme-Wechsel zur Laufzeit (z. B. System wechselt von hell nach dunkel)
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            renderChart(profile.dimensions, profile.datasets);
+        });
     </script>
 </body>
 </html>
