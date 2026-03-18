@@ -17,6 +17,7 @@
         h1 {
             margin-bottom: 20px;
             color: #555;
+            white-space: pre-line;
         }
         canvas {
             max-width: 600px;
@@ -40,7 +41,7 @@
 
         // Default-Profil für Fallback
         const defaultProfile = {
-            name: 'Max Mustermann',
+            name: 'Mitarbeiterprofil: Max Mustermann',
             dimensions: ['Kommunikation', 'Teamarbeit', 'Fachwissen', 'Eigenverantwortung', 'Problemlösung', 'Führung'],
             datasets: [{ label: 'Bewertung', values: [4, 5, 3, 4, 4, 2] }]
         };
@@ -144,8 +145,9 @@
 
         // Funktion zum Setzen des Titels
         function setTitle(name) {
-            document.querySelector('h1').textContent = `Mitarbeiterprofil: ${name}`;
-            document.title = `Mitarbeiterprofil: ${name}`;
+            const lines = [].concat(formatLabel(name));
+            document.querySelector('h1').textContent = lines.join('\n');
+            document.title = name;
         }
 
         // Funktion zur Initialisierung des Charts
