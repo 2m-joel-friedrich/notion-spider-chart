@@ -152,8 +152,7 @@
 
         // Funktion zum Setzen des Titels
         function setTitle(name) {
-            const lines = [].concat(formatLabel(name));
-            document.querySelector('h1').textContent = lines.join('\n');
+            document.querySelector('h1').textContent = name.replace(': ', ':\n');
             document.title = name;
         }
 
